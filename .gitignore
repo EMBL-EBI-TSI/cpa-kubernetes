@@ -1,0 +1,19 @@
+#MacOS X
+*.DS_Store
+
+#Terraform
+*.tfstate*
+*.terraform
+*.tfvars
+credentials.json
+
+#Ansible
+*/vendor/*
+*/tmp/*
+*.retry
+
+#Molecule
+.molecule
+__pycache__
+
+*.log
