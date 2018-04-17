@@ -1,0 +1,7 @@
+disk_image_name     = "centos-7.4"
+machine_type        = "s1.tiny"
+floating_ip_pool    = "ext-net"
+network_name        = "net_name"
+ssh_key             = "ssh-rsa AAA......z== mail@domain.com"
+public_key_path     = "~/.ssh/id_rsa.pub"
+private_key_path    = "~/.ssh/id_rsa"
