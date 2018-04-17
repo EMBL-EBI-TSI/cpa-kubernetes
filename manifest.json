@@ -1,0 +1,16 @@
+{
+    "applicationName": "Kubernetes",
+    "contactEmail": "gianni@ebi.ac.uk",
+    "about": "Kubernetes On-Premises cluster",
+    "version": "0.1",
+    "cloudProviders": [
+        { "cloudProvider":"OSTACK","path":"ostack" }
+    ],
+    "inputs":["node_instances"],
+    "deploymentParameters": [
+        "disk_image_name",
+        "machine_type",
+        "floating_ip_pool",
+        "network_name"],
+    "outputs": ["external_ip"]
+}
