@@ -1,0 +1,239 @@
+---
+- hosts: localhost
+  gather_facts: False
+  roles:
+    - bastion-ssh-config
+  tags: [localhost, bastion]
+
+- hosts: kube-master
+  name: Register connected users name, group and home dir
+  tasks:
+    - name: set user facts
+      set_fact:
+        curr_user: "{{ ansible_user_id }}"
+        curr_group: "{{ ansible_user_id }}"
+        curr_home: "{{ ansible_user_dir }}"
+
+- hosts: k8s-cluster
+  pre_tasks:
+    - include_vars: versions.yml
+  tags:
+    - install_docker
+  any_errors_fatal: true
+  become: true
+  roles:
+    - role: mongrelion.docker
+
+- hosts: k8s-cluster
+  tags:
+    - install_prereqs
+  any_errors_fatal: true
+  become: true
+  name: Install kubeadm
+  tasks:
+    - name: Include version vars
+      include_vars: versions.yml
+    - name: Setup kubernetes repo
+      copy:
+        content: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=1
+          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+                 https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+        dest: /etc/yum.repos.d/kubernetes.repo
+    - name: Makecache with yum to use kubernetes key
+      command: "yum -q makecache -y --disablerepo='*' --enablerepo='kubernetes'"
+    - name: Turn off selinux
+      command: setenforce 0
+    - name: Install kubelet package
+      package:
+        name: kubelet-{{ k8s_version }}
+        state: present
+    - name: Install kubeadm package
+      package:
+        name: kubeadm-{{ k8s_version }}
+        state: present
+    - name: Enable kubelet service
+      service:
+        name: kubelet
+        enabled: yes
+
+- hosts: k8s-cluster
+  name: Setup hosts
+  become: true
+  tasks:
+    - name: Add nodes to hosts file
+      lineinfile:
+        path: /etc/hosts
+        regexp: '.*{{ item }}$'
+        line: '{{ hostvars[item].ansible_default_ipv4.address }} {{item}}'
+        state: present
+      with_items: '{{ groups["kube-node"] }}'
+    - name: Add master to hosts file
+      lineinfile:
+        path: /etc/hosts
+        regexp: '.*{{ item }}$'
+        line: '{{ hostvars[item].ansible_default_ipv4.address }} {{item}} k8s-master kubernetes'
+        state: present
+      with_items: '{{ groups["kube-master"] }}'
+
+- hosts: kube-master
+  name: Generate cluster token
+  become: true
+  tasks:
+    - name: generate and register token
+      command: kubeadm token generate
+      register: token_output
+    - name: export token to fact
+      set_fact:
+        token: "{{ token_output.stdout }}"
+    - debug: var=token_output.stdout_lines
+
+- hosts: k8s-cluster
+  name: Store token on master & nodes
+  become: true
+  tasks:
+    - name: make sure token file is cleared
+      file:
+        path: /root/token
+        state: absent
+    - name: store token in file
+      lineinfile:
+        path: /root/token
+        line: "{{ hostvars[groups['kube-master'][0]]['token'] }}"
+        state: present
+        create: yes
+
+- hosts: k8s-cluster
+  name: Set openstack cloud provider opts
+  become: true
+  tasks:
+    - name: add pki dir
+      file:
+        path: /etc/kubernetes/pki
+        state: directory
+        owner: root
+        group: root
+    - name: set tenant var
+      set_fact: tenant={{ lookup('env', 'OS_TENANT_ID') }}
+    - name: set project var
+      set_fact: project={{ lookup('env', 'OS_PROJECT_ID') }}
+    - name: set tenant/project
+      set_fact: tenant={{ project }}
+      when: tenant == ""
+    - name: add cloud-config file
+      blockinfile:
+        path: /etc/kubernetes/pki/cloud-config
+        owner: root
+        group: root
+        create: yes
+        block: |
+          [Global]
+          auth-url={{ lookup('env', 'OS_AUTH_URL') }}
+          username={{ lookup('env', 'OS_USERNAME') }}
+          password={{ lookup('env', 'OS_PASSWORD') }}
+          region={{ lookup('env', 'OS_REGION_NAME') }}
+          tenant-id={{ tenant }}
+          domain-name={{ lookup('env', 'OS_USER_DOMAIN_NAME') }}
+    - name: add cloud-provider and cloud config to service file
+      lineinfile:
+        path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+        state: present
+        insertbefore: '^ExecStart=$'
+        line: 'Environment="KUBELET_EXTRA_ARGS=--cloud-provider=openstack --cloud-config=/etc/kubernetes/pki/cloud-config"'
+    - name: create kubeadm.conf
+      blockinfile:
+        path: /root/kubeadm.conf
+        create: yes
+        block: |
+          kind: MasterConfiguration
+          apiVersion: kubeadm.k8s.io/v1alpha1
+          cloudProvider: openstack
+          networking:
+            podSubnet: 10.244.0.0/16
+          token: {{ hostvars[groups['kube-master'][0]]['token'] }}
+          apiServerExtraArgs:
+            cloud-config: /etc/kubernetes/pki/cloud-config
+          controllerManagerExtraArgs:
+            cloud-config: /etc/kubernetes/pki/cloud-config
+
+- hosts: kube-master
+  tags:
+    - kubeadm_init
+  name: Start Kubeadm on master
+  become: true
+  tasks:
+    # fixes a bug in kubeadm 1.6, see here https://github.com/kubernetes/kubernetes.github.io/issues/3159
+    - name: Set bridge-nf-call-iptables
+      command: sysctl -w net.bridge.bridge-nf-call-iptables=1
+    - name: Set correct cgroup driver
+      replace:
+        path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+        regexp: '(--cgroup-driver=)systemd'
+        replace: '\1cgroupfs'
+    - name: Enable kubelet service
+      command: systemctl enable kubelet.service
+    - name: Run kubeadm init
+      command: kubeadm init --config=/root/kubeadm.conf
+      register: cat
+    - debug: var=cat.stdout_lines
+
+- hosts: kube-master
+  name: Create config local file
+  become: true
+  tasks:
+    - name: create config file
+      file:
+        dest: "{{ curr_home }}/.kube"
+        state: directory
+        owner: "{{ curr_user }}"
+        group: "{{ curr_group }}"
+    - name: copy config file back
+      copy:
+        remote_src: yes
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ curr_home }}/.kube/config"
+        group: "{{ curr_group }}"
+        owner: "{{ curr_user }}"
+
+- hosts: kube-master
+  name: Setup network plugin on master
+  tags:
+    - network_setup
+  tasks:
+    - name: copy local weave config
+      copy:
+        src: weave-2.1.3-daemonset-k8s-1.7.yaml
+        dest: /home/{{ ansible_user_id }}/weave.yaml
+    - name: apply weave config
+      command: kubectl apply -f /home/{{ ansible_user_id }}/weave.yaml
+
+- hosts: kube-node
+  name: Join nodes to cluster
+  tags:
+    - join_nodes
+  become: true
+  tasks:
+    - name: Set bridge-nf-call-iptables
+      command: sysctl -w net.bridge.bridge-nf-call-iptables=1
+    - name: Set correct cgroup drivers
+      replace:
+        path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+        regexp: '(--cgroup-driver=)systemd'
+        replace: '\1cgroupfs'
+    - name: Reload kubelet demo
+      command: systemctl daemon-reload
+    - name: Run kubeadm join
+      shell: "kubeadm join --discovery-token-unsafe-skip-ca-verification --token `cat /root/token` k8s-master:6443"
+
+- hosts: kube-master
+  name: small bits and bobs
+  tasks:
+    - name: add autocomplete to bash_profile
+      lineinfile:
+        path: /home/centos/.bash_profile
+        line: "source <(kubectl completion bash)"
