@@ -45,8 +45,8 @@ cd ostack/ansible || exit
 ansible-galaxy install -r requirements.yml
 
 # Set default value for Ansible variables if they are either empty or undefined
-#export ANSIBLE_REMOTE_USER="${TF_VAR_remote_user:-centos}"
-#echo "export ANSIBLE_REMOTE_USER=${ANSIBLE_REMOTE_USER}"
+export ANSIBLE_REMOTE_USER="${TF_VAR_remote_user:-centos}"
+echo "export ANSIBLE_REMOTE_USER=${ANSIBLE_REMOTE_USER}"
 
 # Launch Ansible playbook
 #echo -e "\n\t${CYAN}Launch Ansible playbook${NC}\n"
