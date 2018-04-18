@@ -1,0 +1,4 @@
+---
+- name: mongrelion.docker
+  version: master
+  src: mongrelion.docker
