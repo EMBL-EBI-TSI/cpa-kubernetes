@@ -11,6 +11,7 @@ credentials.json
 */vendor/*
 */tmp/*
 *.retry
+ostack/ansible/vendor/roles/mongrelion.docker/
 
 #Molecule
 .molecule
