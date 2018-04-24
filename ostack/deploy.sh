@@ -39,7 +39,7 @@ terraform apply --state=${DPL}'terraform.tfstate' ${APP}'/ostack/terraform'
 # Extract the external IP of the instance
 external_ip=$(terraform output -state=${DPL}'terraform.tfstate' external_ip)
 
- Install Ansible requirements with ansible galaxy
+# Install Ansible requirements with ansible galaxy
 echo -e "\n\t${CYAN}Install Ansible requirements with ansible galaxy${NC}\n"
 cd ostack/ansible || exit
 ansible-galaxy install -r requirements.yml
@@ -49,5 +49,5 @@ export ANSIBLE_REMOTE_USER="${TF_VAR_remote_user:-centos}"
 echo "export ANSIBLE_REMOTE_USER=${ANSIBLE_REMOTE_USER}"
 
 # Launch Ansible playbook
-#echo -e "\n\t${CYAN}Launch Ansible playbook${NC}\n"
-ansible-playbook -b cluster.yml
+echo -e "\n\t${CYAN}Launch Ansible playbook${NC}\n"
+ansible-playbook -e deployment_path=${TF_VAR_deployment_path} cluster.yml
