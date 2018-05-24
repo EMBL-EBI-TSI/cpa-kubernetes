@@ -32,7 +32,7 @@ Create a new entry in the `Deployment Parameters` section.
 This application can be used in combination with one of the following  :  
 [https://github.com/EMBL-EBI-TSI/cpa-network](https://github.com/EMBL-EBI-TSI/cpa-network)  
 
-###  Default values
+### Default values
 
 | Parameter name          | Parameter value     |
 | ---                     | ---                 |

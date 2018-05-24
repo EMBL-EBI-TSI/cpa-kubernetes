@@ -2,7 +2,7 @@
     "applicationName": "Kubernetes",
     "contactEmail": "gianni@ebi.ac.uk",
     "about": "Kubernetes On-Premises cluster",
-    "version": "0.3",
+    "version": "0.4",
     "cloudProviders": [
         {
             "cloudProvider": "OSTACK",
