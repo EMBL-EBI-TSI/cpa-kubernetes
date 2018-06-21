@@ -256,20 +256,20 @@
   name: Change authorized public keys in the nodes
   gather_facts: no
   tasks:
-    - name: Make sure only the key of the user is authorized on the node virtual machine instances
+    - name: Make sure the key of the user is authorized on the node virtual machine instances
       authorized_key:
         user: "{{lookup('env','ANSIBLE_REMOTE_USER')}}"
         key: "{{lookup('env','ssh_key')}}"
-        exclusive: yes
+        exclusive: no
         state: present
 
 - hosts: kube-master
   name: Change authorized public keys in the master
   gather_facts: no
   tasks:
-    - name: Make sure only the key of the user is authorized on the master virtual machine instance
+    - name: Make sure the key of the user is authorized on the master virtual machine instance
       authorized_key:
         user: "{{lookup('env','ANSIBLE_REMOTE_USER')}}"
         key: "{{lookup('env','ssh_key')}}"
-        exclusive: yes
+        exclusive: no
         state: present
