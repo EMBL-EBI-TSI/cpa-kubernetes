@@ -154,6 +154,8 @@
           region={{ lookup('env', 'OS_REGION_NAME') }}
           tenant-id={{ tenant }}
           domain-name={{ lookup('env', 'OS_USER_DOMAIN_NAME') }}
+          [BlockStorage]
+          ignore-volume-az=true
     - name: add cloud-provider and cloud config to service file
       lineinfile:
         path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
