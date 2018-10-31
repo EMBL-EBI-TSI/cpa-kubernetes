@@ -3,4 +3,4 @@
 k8s_version: "1.9.7-0"
 
 # This should be a version that is available for the mongrelion.docker ansible role
-docker_version: "18.03.0.ce"
+docker_version: "18.06.1.ce"

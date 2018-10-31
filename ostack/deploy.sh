@@ -42,7 +42,7 @@ external_ip=$(terraform output -state=${DPL}'terraform.tfstate' external_ip)
 # Install Ansible requirements with ansible galaxy
 echo -e "\n\t${CYAN}Install Ansible requirements with ansible galaxy${NC}\n"
 cd ostack/ansible || exit
-ansible-galaxy install -r requirements.yml
+ansible-galaxy install --force -r requirements.yml
 
 # Set default value for Ansible variables if they are either empty or undefined
 export ANSIBLE_REMOTE_USER="${TF_VAR_remote_user:-centos}"
