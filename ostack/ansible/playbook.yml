@@ -224,7 +224,7 @@
   tasks:
     - name: copy local weave config
       copy:
-        src: weave-2.1.3-daemonset-k8s-1.7.yaml
+        src: weave-2.4.1-daemonset-k8s-1.8.yaml
         dest: /home/{{ ansible_user_id }}/weave.yaml
     - name: apply weave config
       command: kubectl apply -f /home/{{ ansible_user_id }}/weave.yaml
