@@ -12,9 +12,9 @@
   tasks:
   - name: Initial connection block
     block:
-      - name: Wait 2 minutes, but only start checking after 30 seconds
+      - name: Wait up to 2 minutes, start checking after 45 seconds
         wait_for_connection:
-          delay: 30
+          delay: 45
           timeout: 120
     rescue:
       - name: Try to install python 2, when ansible is not able to connect
@@ -31,7 +31,8 @@
 
 - hosts: k8s-cluster
   pre_tasks:
-    - include_vars: versions.yml
+    - name: Include version variables
+      include_vars: versions.yml
   tags:
     - install_docker
   any_errors_fatal: true
@@ -195,7 +196,7 @@
     - name: Enable kubelet service
       command: systemctl enable kubelet.service
     - name: Run kubeadm init
-      command: kubeadm init --config=/root/kubeadm.conf
+      command: kubeadm init --config=/root/kubeadm.conf --ignore-preflight-errors=cri
       register: cat
     - debug: var=cat.stdout_lines
 
@@ -224,7 +225,7 @@
   tasks:
     - name: copy local weave config
       copy:
-        src: weave-2.1.3-daemonset-k8s-1.7.yaml
+        src: weave-2.4.1-daemonset-k8s-1.8.yaml
         dest: /home/{{ ansible_user_id }}/weave.yaml
     - name: apply weave config
       command: kubectl apply -f /home/{{ ansible_user_id }}/weave.yaml
@@ -245,11 +246,16 @@
     - name: Reload kubelet demo
       command: systemctl daemon-reload
     - name: Run kubeadm join
-      shell: "kubeadm join --discovery-token-unsafe-skip-ca-verification --token `cat /root/token` k8s-master:6443"
+      shell: "kubeadm join --discovery-token-unsafe-skip-ca-verification --token `cat /root/token` k8s-master:6443 --ignore-preflight-errors=cri"
 
 - hosts: kube-master
   name: small bits and bobs
   tasks:
+    - name: Install bash-completion
+      package:
+        name: bash-completion
+        state: present
+      become: true
     - name: add autocomplete to bash_profile
       lineinfile:
         path: /home/centos/.bash_profile

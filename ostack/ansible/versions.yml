@@ -1,6 +1,6 @@
 # this must be the name of the yum package version
 # for an overview of available versions, try 'yum search kubeadm --show-duplicates' with the kubernetes repo enabled
-k8s_version: "1.9.7-0"
+k8s_version: "1.10.9-0"
 
 # This should be a version that is available for the mongrelion.docker ansible role
 docker_version: "18.06.1.ce"
