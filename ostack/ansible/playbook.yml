@@ -31,7 +31,8 @@
 
 - hosts: k8s-cluster
   pre_tasks:
-    - include_vars: versions.yml
+    - name: Include version variables
+      include_vars: versions.yml
   tags:
     - install_docker
   any_errors_fatal: true

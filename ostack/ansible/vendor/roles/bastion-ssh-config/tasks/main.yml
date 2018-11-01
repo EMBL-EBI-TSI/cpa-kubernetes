@@ -1,14 +1,17 @@
 ---
-- set_fact:
+- name: Set fact has_bastion
+  set_fact:
     has_bastion: "{{ 'bastion' in groups['all'] }}"
 
-- set_fact:
+- name: Set fact bastion_ip
+  set_fact:
     bastion_ip: "{{ hostvars['bastion']['ansible_ssh_host'] }}"
   when: has_bastion
 
 # As we are actually running on localhost, the ansible_ssh_user is your local user when you try to use it directly
 # To figure out the real ssh user, we delegate this task to the bastion and store the ansible_ssh_user in real_user
-- set_fact:
+- name: Set fact real_user
+  set_fact:
     real_user: "{{ ansible_ssh_user }}"
   delegate_to: bastion
   when: has_bastion
