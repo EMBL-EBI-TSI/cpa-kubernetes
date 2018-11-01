@@ -250,6 +250,11 @@
 - hosts: kube-master
   name: small bits and bobs
   tasks:
+    - name: Install bash-completion
+      package:
+        name: bash-completion
+        state: present
+      become: true
     - name: add autocomplete to bash_profile
       lineinfile:
         path: /home/centos/.bash_profile
