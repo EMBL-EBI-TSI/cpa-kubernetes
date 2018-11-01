@@ -195,7 +195,7 @@
     - name: Enable kubelet service
       command: systemctl enable kubelet.service
     - name: Run kubeadm init
-      command: kubeadm init --config=/root/kubeadm.conf
+      command: kubeadm init --config=/root/kubeadm.conf --ignore-preflight-errors=cri
       register: cat
     - debug: var=cat.stdout_lines
 
@@ -245,7 +245,7 @@
     - name: Reload kubelet demo
       command: systemctl daemon-reload
     - name: Run kubeadm join
-      shell: "kubeadm join --discovery-token-unsafe-skip-ca-verification --token `cat /root/token` k8s-master:6443"
+      shell: "kubeadm join --discovery-token-unsafe-skip-ca-verification --token `cat /root/token` k8s-master:6443 --ignore-preflight-errors=cri"
 
 - hosts: kube-master
   name: small bits and bobs
