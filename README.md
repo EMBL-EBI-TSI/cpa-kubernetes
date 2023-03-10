@@ -1,3 +1,6 @@
+> **Note**
+> The EBI Cloud Portal has been retired and its code base is no longer updated.
+
 # EBI Cloud Portal - Kubernetes
 Kubernetes On-Premises virtual machine.  
 It uses the official CentOS 7.4 iso image and configures a Kubernetes cluster using an Ansible role.
